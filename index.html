@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>致我失忆的妻子</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      overflow: hidden;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      font-family: "Microsoft YaHei", sans-serif;
+      color: white;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+    .content {
+      position: relative;
+      z-index: 2;
+      max-width: 700px;
+      padding: 30px;
+      text-align: center;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(5px);
+      border-radius: 15px;
+      box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+    }
+    .content h1 {
+      font-size: 2.2rem;
+      margin-bottom: 20px;
+      color: #ffccdd;
+      text-shadow: 0 0 10px rgba(255, 204, 221, 0.5);
+    }
+    .content p {
+      font-size: 1.1rem;
+      line-height: 1.8;
+      color: #f0f0f0;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bg"></canvas>
+  <div class="content">
+    <h1>致我失忆的妻子</h1>
+    <p>宝宝你知道吗其实你失忆了。你是我妻子，我们相识即一钟见情，相恋年十有余。第年四同居，两年后下定终身，得到我们两家长辈的祝福结为秦晋之好。然天有不测风云，你被奸人所害，只因嫉妒我们幸福美满、家庭甜蜜和睦，后又为人所拐，一直杳无音讯。今日我特发此评论，正是望你知道真相，希望看到此消息的你，正是我消失了的妻子。</p>
+  </div>
+
+  <!-- 引入 Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // 初始化 Three.js
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg'), antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+
+    // 柔光环境
+    scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+    const pointLight = new THREE.PointLight(0xff66aa, 1, 100);
+    pointLight.position.set(10, 10, 10);
+    scene.add(pointLight);
+
+    // 创建爱心几何体（用参数方程）
+    function createHeartGeometry(size = 1) {
+      const curve = new THREE.Curve();
+      curve.getPoint = (t) => {
+        t *= 2 * Math.PI;
+        const x = size * 16 * Math.pow(Math.sin(t), 3);
+        const y = size * (13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+        return new THREE.Vector3(x / 30, y / 30, 0);
+      };
+      const points = curve.getPoints(100);
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      return geometry;
+    }
+
+    // 添加多个爱心
+    const hearts = [];
+    for (let i = 0; i < 8; i++) {
+      const geometry = createHeartGeometry(0.8 + Math.random() * 0.5);
+      const material = new THREE.LineBasicMaterial({
+        color: new THREE.Color(Math.random() * 0.3 + 0.7, 0.3, 0.5 + Math.random() * 0.5),
+        transparent: true,
+        opacity: 0.6 + Math.random() * 0.3
+      });
+      const heart = new THREE.Line(geometry, material);
+      heart.position.set(
+        (Math.random() - 0.5) * 20,
+        (Math.random() - 0.5) * 10,
+        -10 - Math.random() * 15
+      );
+      heart.userData = {
+        speed: 0.001 + Math.random() * 0.003,
+        scaleSpeed: 0.005 + Math.random() * 0.01
+      };
+      scene.add(heart);
+      hearts.push(heart);
+    }
+
+    // 添加粒子（回忆碎片）
+    const particles = new THREE.BufferGeometry();
+    const particleCount = 200;
+    const posArray = new Float32Array(particleCount * 3);
+    const colorArray = new Float32Array(particleCount * 3);
+
+    for (let i = 0; i < particleCount * 3; i += 3) {
+      posArray[i] = (Math.random() - 0.5) * 30;
+      posArray[i + 1] = (Math.random() - 0.5) * 15;
+      posArray[i + 2] = -5 - Math.random() * 20;
+      colorArray[i] = 1;
+      colorArray[i + 1] = 1;
+      colorArray[i + 2] = 1;
+    }
+
+    particles.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+    particles.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+
+    const particleMaterial = new THREE.PointsMaterial({
+      size: 0.1,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.7
+    });
+
+    const particleSystem = new THREE.Points(particles, particleMaterial);
+    scene.add(particleSystem);
+
+    camera.position.z = 5;
+
+    // 鼠标交互
+    let mouseX = 0, mouseY = 0;
+    document.addEventListener('mousemove', (e) => {
+      mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+      mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+    });
+
+    // 窗口缩放
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // 动画循环
+    const animate = () => {
+      requestAnimationFrame(animate);
+
+      // 相机轻微跟随鼠标
+      camera.position.x += (mouseX * 2 - camera.position.x) * 0.02;
+      camera.position.y += (mouseY * 2 - camera.position.y) * 0.02;
+      camera.lookAt(scene.position);
+
+      // 爱心旋转 + 缩放
+      hearts.forEach(heart => {
+        heart.rotation.z += heart.userData.speed;
+        heart.scale.x = 1 + Math.sin(Date.now() * heart.userData.scaleSpeed) * 0.2;
+        heart.scale.y = heart.scale.x;
+      });
+
+      // 粒子轻微浮动
+      const positions = particleSystem.geometry.attributes.position.array;
+      for (let i = 0; i < positions.length; i += 3) {
+        positions[i + 1] += Math.sin(Date.now() * 0.001 + i) * 0.001;
+      }
+      particleSystem.geometry.attributes.position.needsUpdate = true;
+
+      renderer.render(scene, camera);
+    };
+
+    animate();
+  </script>
+</body>
+</html>
+
+
